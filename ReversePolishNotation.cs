@@ -2,8 +2,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 namespace ReversePolishNotation
@@ -16,20 +18,24 @@ namespace ReversePolishNotation
     }
     class ReversePolishNotation
     {
-        //Esta funcion determina si la entrada de tanto el usuario como los casos de prueba son validos para ser tokenizados y resolvidos
-        public bool getInput(string expresion)
+        //Retorna si el caracter analizado es un operador lógico o no
+        public bool isLogical(char c)
         {
-            for(int i = 0; i < expresion.Length; i++)
+            if (c == logicalOperators.AND || c == logicalOperators.OR || c == logicalOperators.CON) return true;
+            return false;
+        }
+
+        //Determina si la expresión en notación polaca es válida, tanto si las proposiciones son letras minusculas
+        //como la validación del orden de la expresión.
+        public bool validateFormula(string formula)
+        {
+            for (int i = 0; i < formula.Length; i++)
             {
-                if ( expresion[i] == ' ' && expresion[i + 1] == ' ' ||
-                     expresion[i] != logicalOperators.AND &&
-                     expresion[i] != logicalOperators.OR && 
-                     expresion[i] != logicalOperators.CON &&
-                     (expresion[i] > 'a' && expresion[i] < 'z') &&
-                     !Char.IsLower(expresion[i]))
-                {
-                    return false;
-                }
+                if (formula[i] == ' ' && formula[i + 1] == ' ') return false;
+                else if (formula[i] == ' ') continue;
+                else if (Char.IsUpper(formula[i])) return false;
+                else if (Char.IsLetter(formula[i]) && Char.IsLetter(formula[i + 1])) return false;
+                else if (!isLogical(formula[i]) && !Char.IsLetter(formula[i])) return false;
             }
             return true;
         }
@@ -39,7 +45,11 @@ namespace ReversePolishNotation
          y los va acumulando en un arreglo de cadenas que se da como salida 
          conjuntamente con la longitud del mismo
          */
-        public void tokenizeinput(string postFixExp, string[] splitStr) => splitStr = postFixExp.Split(" ");
+        public string[] tokenizeInput(string postFixExp)
+        {
+            return postFixExp.Split(" ");
+        }
+
         /*
          Esta función toma como entrada un arreglo de cadenas y la longitud
          del mismo. Este debe contener los componentes (operandos y operadores)
@@ -47,11 +57,30 @@ namespace ReversePolishNotation
          La función deberá usar una pila para computar determinar si se trata o no
          de una formula bien formada en notacio'n polaca inversa.
         */
-        public int parseFormula(string[] splitStr)
+        public bool parseFormula(string[] splitStr) 
         {
             Stack wff = new Stack();
-
-            return 0;
+            foreach (string c in splitStr)
+            {
+                if (Char.IsLetter(c[0])) wff.Push(c[0]);
+                else
+                {
+                    try
+                    {
+                        for(int i = 0; i < 2; i++)
+                        {
+                            if (Convert.ToChar(wff.Peek()) == '*' || Char.IsLetter(Convert.ToChar(wff.Peek()))) wff.Pop();
+                        }
+                        wff.Push('*');
+                    }
+                    catch (InvalidOperationException) //Stack está vacio
+                    {
+                        return false;
+                    }
+                }
+            }
+            if (wff.Count == 1) return true;
+            return false;
         }
     }
 }
